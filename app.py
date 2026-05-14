@@ -381,11 +381,11 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
         return None
 
     PAGE      = landscape(A4)          # 841.9 x 595.3 pts
-    L_MARGIN  = 0.7 * inch
-    R_MARGIN  = 0.7 * inch
-    T_MARGIN  = 0.7 * inch
-    B_MARGIN  = 0.7 * inch
-    USABLE_W  = PAGE[0] - L_MARGIN - R_MARGIN   # ~10.46 inch
+    L_MARGIN  = 0.6 * inch
+    R_MARGIN  = 0.6 * inch
+    T_MARGIN  = 0.6 * inch
+    B_MARGIN  = 0.6 * inch
+    USABLE_W  = PAGE[0] - L_MARGIN - R_MARGIN   # wider usable area
 
     # ── Colours ──────────────────────────────────────────────────────────────
     C_NAVY    = colors.HexColor('#1A1A5E')
@@ -492,16 +492,35 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
     el += section_heading(1, "Dataset Preview")
     el += [Paragraph(f'<b>Total Rows:</b>  {data.shape[0]}    <b>Total Columns:</b>  {data.shape[1]}', S_BODY),
            Spacer(1, 0.08*inch)]
-    # ALL rows — auto column widths
+    # ALL rows — smart column widths
     all_rows = data.copy()
     n_c = len(all_rows.columns) + 1
-    id_w  = 0.35 * inch
+    id_w  = 0.3 * inch
     rest_w = (USABLE_W - id_w) / len(all_rows.columns)
     col_w  = [id_w] + [rest_w] * len(all_rows.columns)
     t_data = [['#'] + list(all_rows.columns)]
     for i, row in enumerate(all_rows.itertuples(index=False), 1):
         t_data.append([str(i)] + [str(v) for v in row])
-    el += [mk_table(t_data, col_w), Spacer(1, 0.1*inch)]
+
+    t = Table(t_data, colWidths=col_w, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND',   (0,0), (-1,0),  C_TH_BG),
+        ('TEXTCOLOR',    (0,0), (-1,0),  C_WHITE),
+        ('FONTNAME',     (0,0), (-1,0),  FONT_BOLD),
+        ('FONTNAME',     (0,1), (-1,-1), FONT_REG),
+        ('FONTSIZE',     (0,0), (-1,0),  7),
+        ('FONTSIZE',     (0,1), (-1,-1), 7),
+        ('ALIGN',        (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN',       (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING',   (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING',(0,0), (-1,-1), 4),
+        ('LEFTPADDING',  (0,0), (-1,-1), 4),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('GRID',         (0,0), (-1,-1), 0.4, C_DIVIDER),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1), [C_WHITE, C_ALT]),
+        ('WORDWRAP',     (0,0), (-1,-1), True),
+    ]))
+    el += [t, Spacer(1, 0.1*inch)]
 
     # 2. DATA CLEANING
     el += section_heading(2, "Data Cleaning")
@@ -905,47 +924,87 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
 # ================= MAIN LOGIC ======================
 # ===================================================
 if uploaded_file is not None:
-    if uploaded_file.name.endswith(".csv"):
-        data = pd.read_csv(uploaded_file)
-    else:
-        data = pd.read_excel(uploaded_file)
+    # ── Load data into session_state only when a new file is uploaded ────────
+    file_key = uploaded_file.name + str(uploaded_file.size)
+    if 'file_key' not in st.session_state or st.session_state.file_key != file_key:
+        if uploaded_file.name.endswith(".csv"):
+            raw = pd.read_csv(uploaded_file)
+        else:
+            raw = pd.read_excel(uploaded_file)
+        st.session_state.original_data = raw.copy()  # NEVER touch this
+        st.session_state.data = raw.copy()            # working copy for analysis
+        st.session_state.file_key = file_key
+
+    data = st.session_state.data  # always work on the copy
 
     # ── 1. DATASET PREVIEW ──────────────────────────────────────────────────
     section_header("📄", "Dataset Preview", step=1)
-    preview_data = data.copy(); preview_data.index = range(1, len(preview_data)+1)
-    st.dataframe(preview_data, use_container_width=True)
+    # Always show ORIGINAL uploaded data — never modified
+    original_data = st.session_state.original_data.copy()
+    original_data.index = range(1, len(original_data)+1)
+    st.dataframe(original_data, use_container_width=True)
     st.markdown(f"""
     <div class="stat-row">
         <div class="stat-card" style="--accent:linear-gradient(90deg,#636efa,#818cf8)">
             <div class="stat-label">Total Rows</div>
-            <div class="stat-value">{data.shape[0]}<span class="stat-unit"> rows</span></div>
+            <div class="stat-value">{st.session_state.original_data.shape[0]}<span class="stat-unit"> rows</span></div>
         </div>
         <div class="stat-card" style="--accent:linear-gradient(90deg,#b24bf3,#636efa)">
             <div class="stat-label">Total Columns</div>
-            <div class="stat-value">{data.shape[1]}<span class="stat-unit"> cols</span></div>
+            <div class="stat-value">{st.session_state.original_data.shape[1]}<span class="stat-unit"> cols</span></div>
         </div>
         <div class="stat-card" style="--accent:linear-gradient(90deg,#22c55e,#16a34a)">
             <div class="stat-label">Status</div>
             <div class="stat-value" style="font-size:1.1rem;color:#86efac;padding-top:0.4rem">✓ Loaded</div>
         </div>
     </div>""", unsafe_allow_html=True)
+    box("Your original file is safe and unchanged. All cleaning and analysis is done on a separate working copy.", "info")
 
     # ── 2. DATA CLEANING ────────────────────────────────────────────────────
     section_header("🧹", "Data Cleaning", step=2)
+
+    # Always show original data's issues so user knows what was there
+    orig = st.session_state.original_data
+    orig_missing = orig.isnull().sum().sum()
+    orig_duplicates = orig.duplicated().sum()
+
+    # Show original data status
+    if orig_missing > 0 or orig_duplicates > 0:
+        box(f"Original uploaded data has — Missing Values: <b>{orig_missing}</b>  |  Duplicate Rows: <b>{orig_duplicates}</b>", "warning")
+    else:
+        box("Original uploaded data is perfectly clean — no missing values, no duplicates.", "success")
+
     st.markdown('<div class="pill">🔍 Missing Values</div>', unsafe_allow_html=True)
     missing = data.isnull().sum()
     missing_df = missing.reset_index(); missing_df.columns=["Column Name","Missing Count"]; missing_df.index=range(1,len(missing_df)+1)
     st.dataframe(missing_df, use_container_width=True)
-    if missing.sum()==0: box("No missing values found — dataset is perfectly clean.","success")
+
+    if missing.sum()==0:
+        box("✅ Missing values removed from working copy — analysis will use clean data.","success") if orig_missing > 0 else box("No missing values found — dataset is perfectly clean.","success")
     else:
-        box(f"Total missing values found: {missing.sum()}","warning")
-        if st.button("🗑️ Remove Missing Values"): data=data.dropna(); box(f"Removed! Remaining rows: {data.shape[0]}","success")
+        box(f"Total missing values found: {missing.sum()} — click below to remove for analysis.","warning")
+        if st.button("🗑️ Remove Missing Values"):
+            st.session_state.data = st.session_state.data.dropna()
+            data = st.session_state.data
+            st.rerun()
+
     st.markdown('<div class="pill" style="margin-top:1rem">🔁 Duplicate Rows</div>', unsafe_allow_html=True)
     dup_count = data.duplicated().sum()
-    if dup_count==0: box("No duplicate rows — all records are unique.","success")
+    if dup_count==0:
+        box("✅ Duplicate rows removed from working copy — analysis will use clean data.","success") if orig_duplicates > 0 else box("No duplicate rows — all records are unique.","success")
     else:
-        box(f"{dup_count} duplicate row(s) found.","warning")
-        if st.button("🗑️ Remove Duplicate Rows"): data=data.drop_duplicates(); box(f"Removed! Remaining rows: {data.shape[0]}","success")
+        box(f"{dup_count} duplicate row(s) found — click below to remove for analysis.","warning")
+        if st.button("🗑️ Remove Duplicate Rows"):
+            st.session_state.data = st.session_state.data.drop_duplicates()
+            data = st.session_state.data
+            st.rerun()
+
+    # Reset button — lets user go back to original dirty data
+    if orig_missing > 0 or orig_duplicates > 0:
+        st.markdown("<div style='margin-top:0.8rem'></div>", unsafe_allow_html=True)
+        if st.button("🔄 Reset to Original Data"):
+            st.session_state.data = st.session_state.original_data.copy()
+            st.rerun()
 
     # ── 3. DATA HEALTH SCORE ────────────────────────────────────────────────
     section_header("💚", "Data Health Score", step=3)
@@ -1050,6 +1109,9 @@ if uploaded_file is not None:
         elif "product" in col_lower or "category" in col_lower: smart_suggestion_text="Scale top-performing products and improve weak categories."
         elif "gender" in col_lower: smart_suggestion_text="Review if offerings are balanced across genders."
         elif "payment" in col_lower: smart_suggestion_text="Promote the most used payment mode and consider removing less-used ones."
+        elif "department" in col_lower: smart_suggestion_text="Invest in top-performing departments and support weaker ones."
+        elif "rating" in col_lower or "score" in col_lower: smart_suggestion_text="Focus on improving lower ratings and maintaining top scores."
+        elif "designation" in col_lower or "role" in col_lower: smart_suggestion_text="Review resource allocation across designations."
         else: smart_suggestion_text="Improve low-performing values and scale top-performing ones."
         st.markdown(f'<div class="insight-card"><div class="insight-card-title">🧠 Smart Suggestion</div><div class="insight-card-body">💡 {smart_suggestion_text}</div></div>', unsafe_allow_html=True)
 
