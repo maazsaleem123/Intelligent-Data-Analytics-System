@@ -57,9 +57,7 @@ html, body, [data-testid="stAppViewContainer"] {
     background-clip: text !important; margin: 0 0 1rem !important; padding: 0 !important;
 }
 .hero-sub { color: #8b8ba7; font-size: 1.05rem; font-weight: 400; max-width: 560px; margin: 0 auto; line-height: 1.7; text-align: center !important; display: block; width: 100%; }
-/* Force all paragraphs in hero to center */
 .hero-wrap p { text-align: center !important; }
-/* Target Streamlit's own markdown p wrapper inside hero */
 .hero-wrap [data-testid="stMarkdownContainer"] p,
 .hero-wrap [data-testid="stMarkdownContainer"],
 [data-testid="stMarkdownContainer"] .hero-sub {
@@ -67,7 +65,6 @@ html, body, [data-testid="stAppViewContainer"] {
     width: 100% !important;
     display: block !important;
 }
-/* Global fix: all markdown text in the hero area */
 div:has(> .hero-wrap) p { text-align: center !important; }
 .hero-divider { width: 80px; height: 3px; background: linear-gradient(90deg, #636efa, #b24bf3); border-radius: 2px; margin: 1.8rem auto 0; }
 
@@ -158,7 +155,7 @@ div:has(> .hero-wrap) p { text-align: center !important; }
 /* DATAFRAME */
 [data-testid="stDataFrame"] { border-radius: 14px !important; overflow: hidden !important; border: 1px solid rgba(255,255,255,0.07) !important; }
 
-/* FILE UPLOADER - button and text on same line, centered */
+/* FILE UPLOADER */
 [data-testid="stFileUploader"] * { text-align: center !important; }
 [data-testid="stFileUploader"] > div { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
 [data-testid="stFileUploader"] label { display: none !important; }
@@ -177,30 +174,17 @@ section[data-testid="stFileUploadDropzone"] {
 section[data-testid="stFileUploadDropzone"]:hover { border-color: rgba(99,110,250,0.65) !important; }
 section[data-testid="stFileUploadDropzone"] button {
     background: linear-gradient(135deg, #636efa, #818cf8) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 0.55rem 1.5rem !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 0.9rem !important;
-    flex-shrink: 0 !important;
-    cursor: pointer !important;
+    color: white !important; border: none !important; border-radius: 10px !important;
+    padding: 0.55rem 1.5rem !important; font-family: 'DM Sans', sans-serif !important;
+    font-weight: 600 !important; font-size: 0.9rem !important; flex-shrink: 0 !important; cursor: pointer !important;
 }
 section[data-testid="stFileUploadDropzone"] span,
 section[data-testid="stFileUploadDropzone"] small,
 section[data-testid="stFileUploadDropzone"] p {
-    color: #5a5a7a !important;
-    font-size: 0.82rem !important;
-    text-align: left !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
+    color: #5a5a7a !important; font-size: 0.82rem !important; text-align: left !important; margin: 0 !important; flex-shrink: 0 !important;
 }
 [data-testid="uploadedFileData"] {
-    background: rgba(99,110,250,0.08) !important;
-    border: 1px solid rgba(99,110,250,0.25) !important;
-    border-radius: 10px !important;
-    margin-top: 0.5rem !important;
+    background: rgba(99,110,250,0.08) !important; border: 1px solid rgba(99,110,250,0.25) !important; border-radius: 10px !important; margin-top: 0.5rem !important;
 }
 
 hr { border-color: rgba(255,255,255,0.06) !important; }
@@ -217,7 +201,6 @@ st.markdown("""
     <div class="hero-divider"></div>
 </div>
 
-<!-- GitHub fixed top-left button -->
 <a href="https://github.com/maazsaleem123/Intelligent-Data-Analytics-System" target="_blank"
    style="position:fixed;top:14px;left:16px;z-index:9999;display:inline-flex;align-items:center;gap:0.4rem;
           padding:0.35rem 0.85rem;background:rgba(20,20,30,0.85);border:1px solid rgba(99,110,250,0.3);
@@ -243,18 +226,6 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
     uploaded_file = st.file_uploader("", type=["csv", "xlsx"], label_visibility="collapsed")
-    # Force-center the upload button via JS
-    st.markdown("""
-    <script>
-    function fixUploader() {
-        const dropzone = document.querySelector('section[data-testid="stFileUploadDropzone"]');
-        if (dropzone) {
-            dropzone.style.cssText += 'display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:1rem!important;';
-        } else { setTimeout(fixUploader, 100); }
-    }
-    fixUploader();
-    </script>
-    """, unsafe_allow_html=True)
 
 
 # ================= HELPERS =================
@@ -363,45 +334,44 @@ def render_chart(chart_data, data, selected_col, chart_type, key_suffix=""):
         st.plotly_chart(fig, use_container_width=True, key=f"pie{key_suffix}")
 
 
-# ================= PDF =================
+# ================= PDF REPORT =================
 def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_percent, duplicate_percent,
                          value_counts, percent_df, top_percent, insight_text, key_obs_text,
-                         smart_suggestion_text, chart_img_bytes, missing_df):
+                         smart_suggestion_text, chart_img_bytes, missing_df, column):
     try:
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib import colors
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch, cm
+        from reportlab.lib.units import inch
         from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
-                                         TableStyle, Image as RLImage, HRFlowable, KeepTogether)
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
+                                         TableStyle, Image as RLImage, HRFlowable)
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
     except ImportError:
         return None
 
-    PAGE      = landscape(A4)          # 841.9 x 595.3 pts
-    L_MARGIN  = 0.6 * inch
-    R_MARGIN  = 0.6 * inch
-    T_MARGIN  = 0.6 * inch
-    B_MARGIN  = 0.6 * inch
-    USABLE_W  = PAGE[0] - L_MARGIN - R_MARGIN   # wider usable area
+    PAGE     = landscape(A4)
+    L_MARGIN = 0.6 * inch
+    R_MARGIN = 0.6 * inch
+    T_MARGIN = 0.6 * inch
+    B_MARGIN = 0.6 * inch
+    USABLE_W = PAGE[0] - L_MARGIN - R_MARGIN
 
-    # ── Colours ──────────────────────────────────────────────────────────────
-    C_NAVY    = colors.HexColor('#1A1A5E')
-    C_BODY    = colors.HexColor('#1A1A1A')
-    C_GRAY    = colors.HexColor('#555555')
-    C_GREEN_T = colors.HexColor('#146C43')
-    C_GREEN_B = colors.HexColor('#D4EDDA')
-    C_BLUE_T  = colors.HexColor('#084C61')
-    C_BLUE_B  = colors.HexColor('#D1ECF1')
-    C_RED_T   = colors.HexColor('#9B1C1C')
-    C_RED_B   = colors.HexColor('#FDE8E8')
-    C_TH_BG   = colors.HexColor('#1E3A8A')
-    C_ALT     = colors.HexColor('#EEF2FF')
-    C_WHITE   = colors.white
-    C_DIVIDER = colors.HexColor('#CCCCCC')
-    C_ACCENT  = colors.HexColor('#636EFA')
+    C_NAVY   = colors.HexColor('#1A1A5E')
+    C_BODY   = colors.HexColor('#1A1A1A')
+    C_GRAY   = colors.HexColor('#555555')
+    C_GREEN_T= colors.HexColor('#146C43')
+    C_GREEN_B= colors.HexColor('#D4EDDA')
+    C_BLUE_T = colors.HexColor('#084C61')
+    C_BLUE_B = colors.HexColor('#D1ECF1')
+    C_RED_T  = colors.HexColor('#9B1C1C')
+    C_RED_B  = colors.HexColor('#FDE8E8')
+    C_TH_BG  = colors.HexColor('#1E3A8A')
+    C_ALT    = colors.HexColor('#EEF2FF')
+    C_WHITE  = colors.white
+    C_DIVIDER= colors.HexColor('#CCCCCC')
+    C_ACCENT = colors.HexColor('#636EFA')
+    C_PILL_BG= colors.HexColor('#1E1E3F')
+    C_PILL_T = colors.HexColor('#818cf8')
 
     FONT_REG  = 'Times-Roman'
     FONT_BOLD = 'Times-Bold'
@@ -412,12 +382,12 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
                             leftMargin=L_MARGIN, rightMargin=R_MARGIN,
                             topMargin=T_MARGIN,  bottomMargin=B_MARGIN)
 
-    # ── Styles ────────────────────────────────────────────────────────────────
     def ps(name, font=FONT_REG, size=10, color=None, align=TA_LEFT,
            bold=False, italic=False, space_before=0, space_after=4,
            bg=None, leading=None, left_indent=0):
-        return ParagraphStyle(name,
-            fontName = FONT_BOLD if bold else FONT_ITAL if italic else font,
+        from reportlab.lib.styles import ParagraphStyle as PS
+        return PS(name,
+            fontName  = FONT_BOLD if bold else FONT_ITAL if italic else font,
             fontSize  = size,
             textColor = color or C_BODY,
             alignment = align,
@@ -429,40 +399,39 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
             rightIndent = left_indent,
         )
 
-    S_TITLE    = ps('title',    font=FONT_BOLD, size=22, color=C_NAVY, align=TA_CENTER, space_after=4)
-    S_SUBTITLE = ps('sub',      font=FONT_ITAL, size=11, color=C_GRAY, align=TA_CENTER, space_after=3)
-    S_DATE     = ps('date',     font=FONT_ITAL, size=10, color=C_GRAY, align=TA_CENTER, space_after=6)
-    S_HEAD     = ps('head',     font=FONT_BOLD, size=13, color=C_NAVY, space_before=14, space_after=6)
-    S_LABEL    = ps('label',    font=FONT_BOLD, size=10, color=C_NAVY, space_after=3)
-    S_BODY     = ps('body',     size=10, color=C_BODY, space_after=3)
-    S_SUCCESS  = ps('succ',     font=FONT_BOLD, size=10, color=C_GREEN_T, bg=C_GREEN_B, space_after=4, left_indent=8)
-    S_INFO     = ps('info',     font=FONT_BOLD, size=10, color=C_BLUE_T,  bg=C_BLUE_B,  space_after=4, left_indent=8)
-    S_WARN     = ps('warn',     font=FONT_BOLD, size=10, color=C_RED_T,   bg=C_RED_B,   space_after=4, left_indent=8)
-    S_FOOT     = ps('foot',     font=FONT_ITAL, size=9,  color=C_GRAY,   align=TA_CENTER, space_after=0)
+    S_TITLE   = ps('title',  font=FONT_BOLD, size=22, color=C_NAVY, align=TA_CENTER, space_after=4)
+    S_DATE    = ps('date',   font=FONT_ITAL, size=10, color=C_GRAY, align=TA_CENTER, space_after=6)
+    S_HEAD    = ps('head',   font=FONT_BOLD, size=13, color=C_NAVY, space_before=14, space_after=6)
+    S_BODY    = ps('body',   size=10, color=C_BODY, space_after=3)
+    S_SUCCESS = ps('succ',   font=FONT_BOLD, size=10, color=C_GREEN_T, bg=C_GREEN_B, space_after=4, left_indent=8)
+    S_INFO    = ps('info',   font=FONT_BOLD, size=10, color=C_BLUE_T,  bg=C_BLUE_B,  space_after=4, left_indent=8)
+    S_WARN    = ps('warn',   font=FONT_BOLD, size=10, color=C_RED_T,   bg=C_RED_B,   space_after=4, left_indent=8)
+    S_PILL    = ps('pill',   font=FONT_BOLD, size=9,  color=C_PILL_T,  bg=C_PILL_BG, space_after=4, left_indent=4)
+    S_FOOT    = ps('foot',   font=FONT_ITAL, size=9,  color=C_GRAY,   align=TA_CENTER, space_after=0)
 
-    # ── Table builder ─────────────────────────────────────────────────────────
     def mk_table(rows, col_widths=None):
         n = len(rows[0])
         if col_widths is None:
             col_widths = [USABLE_W / n] * n
         t = Table(rows, colWidths=col_widths, repeatRows=1)
-        style = [
-            # Header
-            ('BACKGROUND',  (0,0), (-1,0),  C_TH_BG),
-            ('TEXTCOLOR',   (0,0), (-1,0),  C_WHITE),
-            ('FONTNAME',    (0,0), (-1,-1), FONT_REG),
-            ('FONTNAME',    (0,0), (-1,0),  FONT_BOLD),
-            ('FONTSIZE',    (0,0), (-1,0),  8),
-            ('FONTSIZE',    (0,1), (-1,-1), 8),
-            ('ALIGN',       (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN',      (0,0), (-1,-1), 'MIDDLE'),
-            ('TOPPADDING',  (0,0), (-1,-1), 3),
-            ('BOTTOMPADDING',(0,0),(-1,-1), 3),
-            ('GRID',        (0,0), (-1,-1), 0.4, C_DIVIDER),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),[C_WHITE, C_ALT]),
-        ]
-        t.setStyle(TableStyle(style))
+        t.setStyle(TableStyle([
+            ('BACKGROUND',   (0,0), (-1,0),  C_TH_BG),
+            ('TEXTCOLOR',    (0,0), (-1,0),  C_WHITE),
+            ('FONTNAME',     (0,0), (-1,-1), FONT_REG),
+            ('FONTNAME',     (0,0), (-1,0),  FONT_BOLD),
+            ('FONTSIZE',     (0,0), (-1,0),  8),
+            ('FONTSIZE',     (0,1), (-1,-1), 8),
+            ('ALIGN',        (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN',       (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING',   (0,0), (-1,-1), 3),
+            ('BOTTOMPADDING',(0,0), (-1,-1), 3),
+            ('GRID',         (0,0), (-1,-1), 0.4, C_DIVIDER),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1), [C_WHITE, C_ALT]),
+        ]))
         return t
+
+    def pill_label(text):
+        return Paragraph(f"  {text}", S_PILL)
 
     def section_heading(number, title):
         label = f"{number}.  {title}" if number else title
@@ -473,14 +442,13 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
         ]
 
     def status_box(text, kind='success'):
-        icon = '✔' if kind=='success' else '⚠' if kind=='warning' else 'ℹ'
+        icon  = '✔' if kind=='success' else '⚠' if kind=='warning' else 'ℹ'
         style = S_SUCCESS if kind=='success' else S_WARN if kind=='warning' else S_INFO
         return Paragraph(f"  {icon}  {text}", style)
 
-    # ── Build elements ────────────────────────────────────────────────────────
     el = []
 
-    # TITLE
+    # ── TITLE ──────────────────────────────────────────────────────────────
     el += [Spacer(1, 0.15*inch),
            Paragraph("Intelligent Data Analytics System", S_TITLE),
            Spacer(1, 0.05*inch),
@@ -488,124 +456,147 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
            HRFlowable(width="100%", thickness=2, color=C_ACCENT, spaceAfter=10),
            Spacer(1, 0.1*inch)]
 
-    # 1. DATASET PREVIEW
+    # ── 1. DATASET PREVIEW ─────────────────────────────────────────────────
     el += section_heading(1, "Dataset Preview")
     el += [Paragraph(f'<b>Total Rows:</b>  {data.shape[0]}    <b>Total Columns:</b>  {data.shape[1]}', S_BODY),
            Spacer(1, 0.08*inch)]
-    # ALL rows — smart column widths
-    all_rows = data.copy()
-    n_c = len(all_rows.columns) + 1
-    id_w  = 0.3 * inch
-    rest_w = (USABLE_W - id_w) / len(all_rows.columns)
-    col_w  = [id_w] + [rest_w] * len(all_rows.columns)
-    t_data = [['#'] + list(all_rows.columns)]
-    for i, row in enumerate(all_rows.itertuples(index=False), 1):
+    n_c    = len(data.columns) + 1
+    id_w   = 0.3 * inch
+    rest_w = (USABLE_W - id_w) / len(data.columns)
+    col_w  = [id_w] + [rest_w] * len(data.columns)
+    t_data = [['#'] + list(data.columns)]
+    for i, row in enumerate(data.itertuples(index=False), 1):
         t_data.append([str(i)] + [str(v) for v in row])
-
     t = Table(t_data, colWidths=col_w, repeatRows=1)
     t.setStyle(TableStyle([
-        ('BACKGROUND',   (0,0), (-1,0),  C_TH_BG),
-        ('TEXTCOLOR',    (0,0), (-1,0),  C_WHITE),
-        ('FONTNAME',     (0,0), (-1,0),  FONT_BOLD),
-        ('FONTNAME',     (0,1), (-1,-1), FONT_REG),
-        ('FONTSIZE',     (0,0), (-1,0),  7),
-        ('FONTSIZE',     (0,1), (-1,-1), 7),
-        ('ALIGN',        (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN',       (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING',   (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING',(0,0), (-1,-1), 4),
-        ('LEFTPADDING',  (0,0), (-1,-1), 4),
-        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('BACKGROUND',   (0,0), (-1,0),  C_TH_BG),('TEXTCOLOR', (0,0), (-1,0),  C_WHITE),
+        ('FONTNAME',     (0,0), (-1,0),  FONT_BOLD),('FONTNAME', (0,1), (-1,-1), FONT_REG),
+        ('FONTSIZE',     (0,0), (-1,0),  7),('FONTSIZE', (0,1), (-1,-1), 7),
+        ('ALIGN',        (0,0), (-1,-1), 'CENTER'),('VALIGN',    (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING',   (0,0), (-1,-1), 4),('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING',  (0,0), (-1,-1), 4),('RIGHTPADDING',  (0,0), (-1,-1), 4),
         ('GRID',         (0,0), (-1,-1), 0.4, C_DIVIDER),
         ('ROWBACKGROUNDS',(0,1),(-1,-1), [C_WHITE, C_ALT]),
-        ('WORDWRAP',     (0,0), (-1,-1), True),
     ]))
-    el += [t, Spacer(1, 0.1*inch)]
+    el += [t, Spacer(1, 0.06*inch)]
+    el.append(status_box("Your original file is safe and unchanged. All cleaning and analysis is done on a separate working copy.", 'info'))
+    el.append(Spacer(1, 0.1*inch))
 
-    # 2. DATA CLEANING
+    # ── 2. DATA CLEANING ───────────────────────────────────────────────────
     el += section_heading(2, "Data Cleaning")
-    el.append(Paragraph("<b>Missing Values per Column:</b>", S_BODY))
+    orig_missing   = data.isnull().sum().sum()
+    orig_duplicates= data.duplicated().sum()
+    if orig_missing > 0 or orig_duplicates > 0:
+        el.append(status_box(f"Original uploaded data has — Missing Values: {orig_missing}  |  Duplicate Rows: {orig_duplicates}", 'warning'))
+    else:
+        el.append(status_box("Original uploaded data is perfectly clean — no missing values, no duplicates.", 'success'))
+
+    el.append(pill_label("🔍  Missing Values"))
     mv_rows = [['Column Name', 'Missing Count']] + \
               [[str(r['Column Name']), str(r['Missing Count'])] for _, r in missing_df.iterrows()]
     el += [mk_table(mv_rows, [USABLE_W*0.7, USABLE_W*0.3]), Spacer(1, 0.05*inch)]
     if data.isnull().sum().sum() == 0:
         el.append(status_box("No missing values found — dataset is perfectly clean.", 'success'))
     else:
-        el.append(status_box(f"Total missing values: {data.isnull().sum().sum()}", 'warning'))
-    if data.duplicated().sum() == 0:
-        el.append(status_box("No duplicate rows found — all records are unique.", 'success'))
-    else:
-        el.append(status_box(f"{data.duplicated().sum()} duplicate row(s) found.", 'warning'))
+        el.append(status_box(f"Total missing values found: {data.isnull().sum().sum()} — needs removal for clean analysis.", 'warning'))
 
-    # 3. DATA HEALTH SCORE
+    el.append(pill_label("🔁  Duplicate Rows"))
+    dup_count = data.duplicated().sum()
+    if dup_count == 0:
+        el.append(status_box("No duplicate rows — all records are unique.", 'success'))
+    else:
+        el.append(status_box(f"{dup_count} duplicate row(s) found.", 'warning'))
+    el.append(Spacer(1, 0.1*inch))
+
+    # ── 3. DATA HEALTH SCORE ────────────────────────────────────────────────
     el += section_heading(3, "Data Health Score")
     status_txt = "Excellent ✔" if clean_percent==100 else "Good" if clean_percent>=80 else "Needs Cleaning ⚠"
-    clr = C_GREEN_T if clean_percent==100 else C_BLUE_T if clean_percent>=80 else C_RED_T
-    clr_hex = '#146C43' if clean_percent==100 else '#084C61' if clean_percent>=80 else '#9B1C1C'
+    clr_hex    = '#146C43' if clean_percent==100 else '#084C61' if clean_percent>=80 else '#9B1C1C'
     el.append(Paragraph(
-        f'<b>Clean Data:</b> <font color="{clr_hex}"><b>{clean_percent}%</b></font>    '
+        f'<b>Data Quality Score:</b> <font color="{clr_hex}"><b>{clean_percent}%</b></font>    '
+        f'<b>Clean:</b> {clean_percent}%    '
         f'<b>Missing:</b> {missing_percent}%    '
         f'<b>Duplicates:</b> {duplicate_percent}%    '
         f'<b>Status:</b> <font color="{clr_hex}"><b>{status_txt}</b></font>', S_BODY))
-    el.append(Spacer(1, 0.05*inch))
+    el.append(Spacer(1, 0.1*inch))
 
-    # 4. STATISTICAL SUMMARY
-    el += section_heading(4, "Statistical Summary")
+    # ── 4. DATA ANALYSIS ────────────────────────────────────────────────────
+    el += section_heading(4, "Data Analysis")
+    el.append(pill_label("Statistical Summary"))
     desc = data.describe().round(2)
     stat_w = 1.1 * inch
     val_w  = (USABLE_W - stat_w) / len(desc.columns)
     s_rows = [['Statistic'] + list(desc.columns)] + \
              [[str(idx)] + [str(v) for v in desc.loc[idx]] for idx in desc.index]
-    el += [mk_table(s_rows, [stat_w] + [val_w]*len(desc.columns)), Spacer(1, 0.1*inch)]
+    el += [mk_table(s_rows, [stat_w] + [val_w]*len(desc.columns)), Spacer(1, 0.08*inch)]
 
-    # 5. VISUALIZATION
+    el.append(Paragraph(f'<b>Select column for analysis:</b>  {column}', S_BODY))
+    el.append(Spacer(1, 0.04*inch))
+    el.append(pill_label("Value Counts"))
+    vc = data[column].value_counts().reset_index(); vc.columns = [column, 'Count']
+    el += [mk_table([[column, 'Count']] + [[str(r[column]), str(r['Count'])] for _, r in vc.iterrows()],
+                    [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.1*inch)]
+
+    # ── 5. VISUALIZATION ────────────────────────────────────────────────────
     el += section_heading(5, f"Visualization — {selected_col}  ({chart_type})")
+    el.append(status_box("Graph shows actual counts of each value — exact data, no ranges.", 'info'))
     if chart_img_bytes:
         el += [RLImage(io.BytesIO(chart_img_bytes), width=USABLE_W*0.75, height=USABLE_W*0.38),
                Spacer(1, 0.08*inch)]
 
-    # 6. GRAPH DATA TABLE
-    el += section_heading(6, "Graph Data Table")
-    el.append(Paragraph(f"<b>Count of each value in the '{selected_col}' column:</b>", S_BODY))
+    el.append(pill_label("📋  Graph Data Table"))
+    el.append(Paragraph("Exact count of each value in the selected column.", S_BODY))
     gd = data[selected_col].value_counts().reset_index(); gd.columns = [selected_col, 'Count']
     el += [mk_table([[selected_col, 'Count']] + [[str(r[selected_col]), str(r['Count'])] for _, r in gd.iterrows()],
-                    [USABLE_W*0.75, USABLE_W*0.25]),
-           Spacer(1, 0.1*inch)]
+                    [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.1*inch)]
 
-    # 7. ADVANCED RECOMMENDATIONS
-    el += section_heading(7, "Advanced Recommendations")
+    # ── 6. ADVANCED RECOMMENDATIONS ─────────────────────────────────────────
+    el += section_heading(6, "Advanced Recommendations")
     if len(value_counts) > 0:
-        el.append(Paragraph(
-            f'<b>Highest Performing:</b>  <font color="#146C43"><b>{value_counts.idxmax()}</b></font>'
-            f'     <b>Lowest Performing:</b>  <font color="#9B1C1C"><b>{value_counts.idxmin()}</b></font>', S_BODY))
-        el.append(Spacer(1, 0.06*inch))
+        top_value = value_counts.idxmax()
+        low_value = value_counts.idxmin()
+        el.append(status_box(f"{top_value} is the highest performing value in '{selected_col}'.", 'success'))
+        if len(value_counts) > 1:
+            el.append(status_box(f"{low_value} is the lowest performing value — improvement needed.", 'warning'))
+        el.append(Spacer(1, 0.04*inch))
 
-        el.append(Paragraph("<b>Top 3 Values:</b>", S_BODY))
+        el.append(pill_label("🔝  Top 3 Values"))
         t3 = value_counts.head(3).reset_index(); t3.columns = [selected_col, 'Count']
         el += [mk_table([[selected_col,'Count']]+[[str(r[selected_col]),str(r['Count'])] for _,r in t3.iterrows()],
-                        [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.06*inch)]
+                        [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.04*inch)]
 
-        el.append(Paragraph("<b>Bottom 3 Values:</b>", S_BODY))
+        el.append(pill_label("🔻  Bottom 3 Values"))
         b3 = value_counts.tail(3).reset_index(); b3.columns = [selected_col, 'Count']
         el += [mk_table([[selected_col,'Count']]+[[str(r[selected_col]),str(r['Count'])] for _,r in b3.iterrows()],
-                        [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.06*inch)]
+                        [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.04*inch)]
 
-        el.append(Paragraph("<b>Percentage Contribution:</b>", S_BODY))
+        el.append(pill_label("📊  Percentage Contribution"))
         el += [mk_table([['Value','Contribution (%)']]+[[str(r['Value']),str(r['Contribution (%)'])] for _,r in percent_df.iterrows()],
-                        [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.06*inch)]
+                        [USABLE_W*0.75, USABLE_W*0.25]), Spacer(1, 0.04*inch)]
 
-        el.append(status_box(f"💡  Smart Suggestion:  {smart_suggestion_text}", 'info'))
+        max_percent = (value_counts / value_counts.sum() * 100).max()
+        if max_percent > 60:
+            el.append(status_box(f"{top_value} dominates with {round(max_percent,2)}% — reduce dependency for better balance.", 'warning'))
+        elif max_percent > 40:
+            el.append(status_box(f"{top_value} has strong influence ({round(max_percent,2)}%) — maintain but diversify.", 'warning'))
+        else:
+            el.append(status_box("Data distribution is fairly balanced across all categories.", 'success'))
 
-    # 8. AUTO INSIGHT SUMMARY
-    el += section_heading(8, "Auto Insight Summary")
-    el.append(status_box(insight_text, 'success'))
-    el.append(Spacer(1, 0.05*inch))
+        el.append(Spacer(1, 0.04*inch))
+        el.append(status_box(f"Smart Suggestion: {smart_suggestion_text}", 'info'))
+    el.append(Spacer(1, 0.1*inch))
 
+    # ── 7. AUTO INSIGHT SUMMARY ─────────────────────────────────────────────
+    el += section_heading(7, "Auto Insight Summary")
+    if insight_text:
+        el.append(status_box(insight_text, 'success'))
+    el.append(Spacer(1, 0.04*inch))
     el += section_heading("", "Key Observations")
-    el.append(status_box(key_obs_text, 'info'))
+    if key_obs_text:
+        el.append(status_box(key_obs_text, 'info'))
     el.append(Spacer(1, 0.15*inch))
 
-    # FOOTER
+    # ── FOOTER ─────────────────────────────────────────────────────────────
     el += [HRFlowable(width="100%", thickness=0.8, color=C_DIVIDER, spaceAfter=6),
            Paragraph("Intelligent Data Analytics System", S_FOOT)]
 
@@ -613,13 +604,13 @@ def generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_p
     return buf.getvalue()
 
 
-# ================= WORD =================
+# ================= WORD REPORT =================
 def generate_word_report(data, selected_col, chart_type, clean_percent, missing_percent, duplicate_percent,
                           value_counts, percent_df, top_percent, insight_text, key_obs_text,
-                          smart_suggestion_text, chart_img_bytes, missing_df):
+                          smart_suggestion_text, chart_img_bytes, missing_df, column):
     try:
         from docx import Document
-        from docx.shared import Pt, RGBColor, Inches, Cm
+        from docx.shared import Pt, RGBColor, Inches
         from docx.enum.text import WD_ALIGN_PARAGRAPH
         from docx.oxml.ns import qn
         from docx.oxml import OxmlElement
@@ -627,31 +618,32 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
         return None
 
     doc = Document()
-    # Landscape A4
     for s in doc.sections:
         s.orientation = 1
-        s.page_width  = Inches(11.69)
-        s.page_height = Inches(8.27)
-        s.top_margin    = Inches(0.8)
-        s.bottom_margin = Inches(0.8)
-        s.left_margin   = Inches(0.9)
-        s.right_margin  = Inches(0.9)
+        s.page_width   = Inches(11.69)
+        s.page_height  = Inches(8.27)
+        s.top_margin   = Inches(0.8)
+        s.bottom_margin= Inches(0.8)
+        s.left_margin  = Inches(0.9)
+        s.right_margin = Inches(0.9)
 
-    FONT       = 'Times New Roman'
-    CLR_HEAD   = RGBColor(0x1A, 0x1A, 0x5E)   # deep navy headings
-    CLR_BODY   = RGBColor(0x1A, 0x1A, 0x1A)   # near-black body
-    CLR_GREEN  = RGBColor(0x14, 0x6C, 0x43)   # success green
-    CLR_BLUE   = RGBColor(0x08, 0x4C, 0x61)   # info blue
-    CLR_RED    = RGBColor(0x9B, 0x1C, 0x1C)   # warning red
-    CLR_TBHEAD = RGBColor(0xFF, 0xFF, 0xFF)   # table header white
-    FILL_HEAD  = '1E3A8A'                      # table header fill (dark blue)
-    FILL_ALT   = 'EEF2FF'                      # alternating row fill
+    FONT      = 'Times New Roman'
+    CLR_HEAD  = RGBColor(0x1A, 0x1A, 0x5E)
+    CLR_BODY  = RGBColor(0x1A, 0x1A, 0x1A)
+    CLR_GREEN = RGBColor(0x14, 0x6C, 0x43)
+    CLR_BLUE  = RGBColor(0x08, 0x4C, 0x61)
+    CLR_RED   = RGBColor(0x9B, 0x1C, 0x1C)
+    CLR_TBHD  = RGBColor(0xFF, 0xFF, 0xFF)
+    CLR_PILL  = RGBColor(0x63, 0x6E, 0xFA)
+    FILL_HEAD = '1E3A8A'
+    FILL_ALT  = 'EEF2FF'
+    FILL_PILL = 'E8EAFF'
 
     def set_font(run, size=11, bold=False, color=None, italic=False):
-        run.font.name = FONT
-        run.font.size = Pt(size)
-        run.bold = bold
-        run.italic = italic
+        run.font.name  = FONT
+        run.font.size  = Pt(size)
+        run.bold       = bold
+        run.italic     = italic
         if color: run.font.color.rgb = color
 
     def add_title(text, size=22):
@@ -660,7 +652,6 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
         p.paragraph_format.space_after = Pt(4)
         run = p.add_run(text)
         set_font(run, size=size, bold=True, color=CLR_HEAD)
-        return p
 
     def add_subtitle(text, size=11):
         p = doc.add_paragraph()
@@ -668,108 +659,102 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
         p.paragraph_format.space_after = Pt(2)
         run = p.add_run(text)
         set_font(run, size=size, color=RGBColor(0x55,0x55,0x55), italic=True)
-        return p
 
     def add_section_heading(number, title):
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(14)
         p.paragraph_format.space_after  = Pt(6)
-        run = p.add_run(f"{number}.  {title}")
+        label = f"{number}.  {title}" if number else title
+        run = p.add_run(label)
         set_font(run, size=13, bold=True, color=CLR_HEAD)
-        # Bottom border
-        pPr = p._p.get_or_add_pPr()
+        pPr  = p._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
-        bottom = OxmlElement('w:bottom')
-        bottom.set(qn('w:val'), 'single')
-        bottom.set(qn('w:sz'), '6')
-        bottom.set(qn('w:space'), '1')
-        bottom.set(qn('w:color'), '1E3A8A')
-        pBdr.append(bottom); pPr.append(pBdr)
-        return p
+        bot  = OxmlElement('w:bottom')
+        bot.set(qn('w:val'),   'single')
+        bot.set(qn('w:sz'),    '6')
+        bot.set(qn('w:space'), '1')
+        bot.set(qn('w:color'), '1E3A8A')
+        pBdr.append(bot); pPr.append(pBdr)
 
-    def add_label_value(label, value, label_size=10, value_size=10):
+    def add_pill(text):
+        """Render a pill label exactly like the app's .pill style."""
         p = doc.add_paragraph()
-        p.paragraph_format.space_after = Pt(2)
-        r1 = p.add_run(f"{label}:  ")
-        set_font(r1, size=label_size, bold=True, color=CLR_HEAD)
-        r2 = p.add_run(str(value))
-        set_font(r2, size=value_size, color=CLR_BODY)
-        return p
+        p.paragraph_format.space_after  = Pt(4)
+        p.paragraph_format.space_before = Pt(6)
+        run = p.add_run(f"  {text}  ")
+        set_font(run, size=9, bold=True, color=CLR_PILL)
+        # Light blue-purple shading on the paragraph
+        pPr  = p._p.get_or_add_pPr()
+        shd  = OxmlElement('w:shd')
+        shd.set(qn('w:fill'), FILL_PILL)
+        shd.set(qn('w:color'), 'auto')
+        shd.set(qn('w:val'),  'clear')
+        pPr.append(shd)
 
     def add_body(text, size=10, color=None):
         p = doc.add_paragraph()
         p.paragraph_format.space_after = Pt(3)
         run = p.add_run(text)
         set_font(run, size=size, color=color or CLR_BODY)
-        return p
+
+    def add_label_value(label, value):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(2)
+        r1 = p.add_run(f"{label}:  "); set_font(r1, size=10, bold=True, color=CLR_HEAD)
+        r2 = p.add_run(str(value));    set_font(r2, size=10, color=CLR_BODY)
 
     def add_status_box(text, status='success'):
         p = doc.add_paragraph()
-        p.paragraph_format.space_after = Pt(4)
-        p.paragraph_format.left_indent = Inches(0.2)
-        icon = '✔' if status=='success' else '⚠' if status=='warning' else 'ℹ'
+        p.paragraph_format.space_after  = Pt(4)
+        p.paragraph_format.left_indent  = Inches(0.2)
+        icon  = '✔' if status=='success' else '⚠' if status=='warning' else 'ℹ'
         color = CLR_GREEN if status=='success' else CLR_RED if status=='warning' else CLR_BLUE
-        run = p.add_run(f"  {icon}  {text}")
+        run   = p.add_run(f"  {icon}  {text}")
         set_font(run, size=10, bold=True, color=color)
-        return p
 
     def add_table(headers, rows, col_widths=None):
-        n = len(headers)
-        t = doc.add_table(rows=1, cols=n)
-        t.style = 'Table Grid'
-        # Auto widths
-        usable = Inches(9.89)  # landscape usable width
+        n       = len(headers)
+        usable  = Inches(9.89)
         if col_widths is None:
             col_widths = [usable / n] * n
-        # Header
+        t = doc.add_table(rows=1, cols=n)
+        t.style = 'Table Grid'
         hdr = t.rows[0].cells
         for i, h in enumerate(headers):
             hdr[i].width = col_widths[i]
-            p = hdr[i].paragraphs[0]
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.clear()
-            run = p.add_run(str(h))
-            set_font(run, size=9, bold=True, color=CLR_TBHEAD)
+            p = hdr[i].paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.clear()
+            run = p.add_run(str(h)); set_font(run, size=9, bold=True, color=CLR_TBHD)
             tc = hdr[i]._tc; tcPr = tc.get_or_add_tcPr()
             shd = OxmlElement('w:shd')
-            shd.set(qn('w:fill'), FILL_HEAD)
-            shd.set(qn('w:color'), 'auto')
-            shd.set(qn('w:val'), 'clear')
+            shd.set(qn('w:fill'), FILL_HEAD); shd.set(qn('w:color'), 'auto'); shd.set(qn('w:val'), 'clear')
             tcPr.append(shd)
-        # Data rows
         for ri, row_data in enumerate(rows):
-            rc = t.add_row().cells
+            rc   = t.add_row().cells
             fill = FILL_ALT if ri % 2 == 0 else 'FFFFFF'
             for i, v in enumerate(row_data):
                 rc[i].width = col_widths[i]
-                p = rc[i].paragraphs[0]
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                p.clear()
-                run = p.add_run(str(v))
-                set_font(run, size=9, color=CLR_BODY)
+                p = rc[i].paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.clear()
+                run = p.add_run(str(v)); set_font(run, size=9, color=CLR_BODY)
                 tc = rc[i]._tc; tcPr = tc.get_or_add_tcPr()
                 shd = OxmlElement('w:shd')
-                shd.set(qn('w:fill'), fill)
-                shd.set(qn('w:color'), 'auto')
-                shd.set(qn('w:val'), 'clear')
+                shd.set(qn('w:fill'), fill); shd.set(qn('w:color'), 'auto'); shd.set(qn('w:val'), 'clear')
                 tcPr.append(shd)
         doc.add_paragraph()
-        return t
 
     def add_divider():
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(2)
         p.paragraph_format.space_after  = Pt(2)
-        pPr = p._p.get_or_add_pPr()
+        pPr  = p._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
-        bottom = OxmlElement('w:bottom')
-        bottom.set(qn('w:val'), 'single')
-        bottom.set(qn('w:sz'), '4')
-        bottom.set(qn('w:space'), '1')
-        bottom.set(qn('w:color'), 'CCCCCC')
-        pBdr.append(bottom); pPr.append(pBdr)
+        bot  = OxmlElement('w:bottom')
+        bot.set(qn('w:val'),   'single')
+        bot.set(qn('w:sz'),    '4')
+        bot.set(qn('w:space'), '1')
+        bot.set(qn('w:color'), 'CCCCCC')
+        pBdr.append(bot); pPr.append(pBdr)
 
-    # ── TITLE PAGE ──────────────────────────────────────────────────────────
+    # ── TITLE ───────────────────────────────────────────────────────────────
     doc.add_paragraph()
     add_title("Intelligent Data Analytics System", size=24)
     doc.add_paragraph()
@@ -779,32 +764,29 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
 
     # ── 1. DATASET PREVIEW ──────────────────────────────────────────────────
     add_section_heading(1, "Dataset Preview")
-    add_label_value("Total Rows", data.shape[0])
+    add_label_value("Total Rows",    data.shape[0])
     add_label_value("Total Columns", data.shape[1])
     doc.add_paragraph()
 
-    all_rows = data.copy()
-    n_cols = len(all_rows.columns) + 1
-    usable_w = Inches(9.89)
-    # Give # column less space
-    id_w = Inches(0.35)
-    rest_w = (usable_w - id_w) / len(all_rows.columns)
-    col_widths = [id_w] + [rest_w] * len(all_rows.columns)
+    usable_w   = Inches(9.89)
+    id_w       = Inches(0.35)
+    rest_w     = (usable_w - id_w) / len(data.columns)
+    col_widths = [id_w] + [rest_w] * len(data.columns)
+    n_cols     = len(data.columns) + 1
 
     t = doc.add_table(rows=1, cols=n_cols)
     t.style = 'Table Grid'
     hdr = t.rows[0].cells
-    for i, h in enumerate(['#'] + list(all_rows.columns)):
+    for i, h in enumerate(['#'] + list(data.columns)):
         hdr[i].width = col_widths[i]
         p = hdr[i].paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.clear()
-        run = p.add_run(str(h))
-        set_font(run, size=8, bold=True, color=CLR_TBHEAD)
+        run = p.add_run(str(h)); set_font(run, size=8, bold=True, color=CLR_TBHD)
         tc = hdr[i]._tc; tcPr = tc.get_or_add_tcPr()
         shd = OxmlElement('w:shd')
         shd.set(qn('w:fill'), FILL_HEAD); shd.set(qn('w:color'), 'auto'); shd.set(qn('w:val'), 'clear')
         tcPr.append(shd)
-    for idx, row in enumerate(all_rows.itertuples(index=False), 1):
-        rc = t.add_row().cells
+    for idx, row in enumerate(data.itertuples(index=False), 1):
+        rc   = t.add_row().cells
         fill = FILL_ALT if idx % 2 == 0 else 'FFFFFF'
         rc[0].width = col_widths[0]
         p = rc[0].paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.clear()
@@ -818,21 +800,32 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
             shd.set(qn('w:fill'), fill); shd.set(qn('w:color'), 'auto'); shd.set(qn('w:val'), 'clear')
             tcPr.append(shd)
     doc.add_paragraph()
+    add_status_box("Your original file is safe and unchanged. All cleaning and analysis is done on a separate working copy.", 'info')
 
     # ── 2. DATA CLEANING ────────────────────────────────────────────────────
     add_section_heading(2, "Data Cleaning")
-    add_body("Missing Values per Column:", size=10, color=CLR_HEAD)
+    orig_missing    = data.isnull().sum().sum()
+    orig_duplicates = data.duplicated().sum()
+    if orig_missing > 0 or orig_duplicates > 0:
+        add_status_box(f"Original uploaded data has — Missing Values: {orig_missing}  |  Duplicate Rows: {orig_duplicates}", 'warning')
+    else:
+        add_status_box("Original uploaded data is perfectly clean — no missing values, no duplicates.", 'success')
+
+    add_pill("🔍  Missing Values")
     mv_headers = ['Column Name', 'Missing Count']
-    mv_rows = [[str(r['Column Name']), str(r['Missing Count'])] for _, r in missing_df.iterrows()]
+    mv_rows    = [[str(r['Column Name']), str(r['Missing Count'])] for _, r in missing_df.iterrows()]
     add_table(mv_headers, mv_rows, [Inches(5.0), Inches(4.89)])
     if data.isnull().sum().sum() == 0:
         add_status_box("No missing values found — dataset is perfectly clean.", 'success')
     else:
-        add_status_box(f"Total missing values: {data.isnull().sum().sum()}", 'warning')
-    if data.duplicated().sum() == 0:
-        add_status_box("No duplicate rows found — all records are unique.", 'success')
+        add_status_box(f"Total missing values found: {data.isnull().sum().sum()} — needs removal for clean analysis.", 'warning')
+
+    add_pill("🔁  Duplicate Rows")
+    dup_count = data.duplicated().sum()
+    if dup_count == 0:
+        add_status_box("No duplicate rows — all records are unique.", 'success')
     else:
-        add_status_box(f"{data.duplicated().sum()} duplicate row(s) found.", 'warning')
+        add_status_box(f"{dup_count} duplicate row(s) found.", 'warning')
 
     # ── 3. DATA HEALTH SCORE ────────────────────────────────────────────────
     add_section_heading(3, "Data Health Score")
@@ -840,80 +833,95 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
     color  = CLR_GREEN if clean_percent==100 else CLR_BLUE if clean_percent>=80 else CLR_RED
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(4)
-    for label, val in [("Clean Data", f"{clean_percent}%"), ("  |  Missing", f"{missing_percent}%"),
-                       ("  |  Duplicates", f"{duplicate_percent}%"), ("  |  Status", status)]:
+    for label, val in [("Data Quality Score", f"{clean_percent}%"), ("  |  Clean", f"{clean_percent}%"),
+                       ("  |  Missing", f"{missing_percent}%"), ("  |  Duplicates", f"{duplicate_percent}%"),
+                       ("  |  Status", status)]:
         r1 = p.add_run(f"{label}: "); set_font(r1, size=11, bold=True, color=CLR_HEAD)
         r2 = p.add_run(val + "   "); set_font(r2, size=11, bold=True, color=color)
 
-    # ── 4. STATISTICAL SUMMARY ──────────────────────────────────────────────
-    add_section_heading(4, "Statistical Summary")
+    # ── 4. DATA ANALYSIS ────────────────────────────────────────────────────
+    add_section_heading(4, "Data Analysis")
+    add_pill("Statistical Summary")
     desc = data.describe().round(2)
-    s_headers = ['Statistic'] + list(desc.columns)
-    s_rows = [[str(idx)] + [str(v) for v in desc.loc[idx]] for idx in desc.index]
-    n_s = len(s_headers)
-    stat_w = Inches(1.2)
-    val_w  = (Inches(9.89) - stat_w) / len(desc.columns)
-    add_table(s_headers, s_rows, [stat_w] + [val_w]*len(desc.columns))
+    s_headers  = ['Statistic'] + list(desc.columns)
+    s_rows_data= [[str(idx)] + [str(v) for v in desc.loc[idx]] for idx in desc.index]
+    stat_w     = Inches(1.2)
+    val_w      = (Inches(9.89) - stat_w) / len(desc.columns)
+    add_table(s_headers, s_rows_data, [stat_w] + [val_w]*len(desc.columns))
+
+    add_body(f"Select column for analysis:  {column}", size=10, color=CLR_HEAD)
+    add_pill("Value Counts")
+    vc = data[column].value_counts().reset_index(); vc.columns = [column, 'Count']
+    add_table([column, 'Count'],
+              [[str(r[column]), str(r['Count'])] for _, r in vc.iterrows()],
+              [Inches(6.0), Inches(3.89)])
 
     # ── 5. VISUALIZATION ────────────────────────────────────────────────────
     add_section_heading(5, f"Visualization — {selected_col}  ({chart_type})")
+    add_status_box("Graph shows actual counts of each value — exact data, no ranges.", 'info')
     if chart_img_bytes:
         doc.add_picture(io.BytesIO(chart_img_bytes), width=Inches(7))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph()
 
-    # ── 6. GRAPH DATA TABLE ─────────────────────────────────────────────────
-    add_section_heading(6, "Graph Data Table")
-    add_body(f"Count of each value in the '{selected_col}' column:", size=10, color=CLR_HEAD)
+    add_pill("📋  Graph Data Table")
+    add_body("Exact count of each value in the selected column.", size=10, color=CLR_BODY)
     gd = data[selected_col].value_counts().reset_index(); gd.columns = [selected_col, 'Count']
     add_table([selected_col, 'Count'],
               [[str(r[selected_col]), str(r['Count'])] for _, r in gd.iterrows()],
               [Inches(6.0), Inches(3.89)])
 
-    # ── 7. ADVANCED RECOMMENDATIONS ─────────────────────────────────────────
-    add_section_heading(7, "Advanced Recommendations")
+    # ── 6. ADVANCED RECOMMENDATIONS ─────────────────────────────────────────
+    add_section_heading(6, "Advanced Recommendations")
     if len(value_counts) > 0:
-        p = doc.add_paragraph()
-        r1 = p.add_run("Highest Performing:  "); set_font(r1, size=10, bold=True, color=CLR_HEAD)
-        r2 = p.add_run(str(value_counts.idxmax())); set_font(r2, size=10, bold=True, color=CLR_GREEN)
-        r3 = p.add_run("     Lowest Performing:  "); set_font(r3, size=10, bold=True, color=CLR_HEAD)
-        r4 = p.add_run(str(value_counts.idxmin())); set_font(r4, size=10, bold=True, color=CLR_RED)
+        top_value = value_counts.idxmax()
+        low_value = value_counts.idxmin()
+        add_status_box(f"{top_value} is the highest performing value in '{selected_col}'.", 'success')
+        if len(value_counts) > 1:
+            add_status_box(f"{low_value} is the lowest performing value — improvement needed.", 'warning')
         doc.add_paragraph()
 
-        # Two-column layout: Top 3 | Bottom 3
-        add_body("Top 3 Values:", size=10, color=CLR_HEAD)
+        add_pill("🔝  Top 3 Values")
         t3 = value_counts.head(3).reset_index(); t3.columns = [selected_col, 'Count']
         add_table([selected_col, 'Count'],
                   [[str(r[selected_col]), str(r['Count'])] for _, r in t3.iterrows()],
                   [Inches(6.0), Inches(3.89)])
 
-        add_body("Bottom 3 Values:", size=10, color=CLR_HEAD)
+        add_pill("🔻  Bottom 3 Values")
         b3 = value_counts.tail(3).reset_index(); b3.columns = [selected_col, 'Count']
         add_table([selected_col, 'Count'],
                   [[str(r[selected_col]), str(r['Count'])] for _, r in b3.iterrows()],
                   [Inches(6.0), Inches(3.89)])
 
-        add_body("Percentage Contribution:", size=10, color=CLR_HEAD)
+        add_pill("📊  Percentage Contribution")
         add_table(['Value', 'Contribution (%)'],
                   [[str(r['Value']), str(r['Contribution (%)'])] for _, r in percent_df.iterrows()],
                   [Inches(6.0), Inches(3.89)])
 
+        max_percent = (value_counts / value_counts.sum() * 100).max()
+        if max_percent > 60:
+            add_status_box(f"{top_value} dominates with {round(max_percent,2)}% — reduce dependency for better balance.", 'warning')
+        elif max_percent > 40:
+            add_status_box(f"{top_value} has strong influence ({round(max_percent,2)}%) — maintain but diversify.", 'warning')
+        else:
+            add_status_box("Data distribution is fairly balanced across all categories.", 'success')
+
         p = doc.add_paragraph()
-        r1 = p.add_run("💡  Smart Suggestion:  "); set_font(r1, size=10, bold=True, color=CLR_BLUE)
-        r2 = p.add_run(smart_suggestion_text); set_font(r2, size=10, color=CLR_BODY)
+        r1 = p.add_run("Smart Suggestion:  "); set_font(r1, size=10, bold=True, color=CLR_BLUE)
+        r2 = p.add_run(smart_suggestion_text);  set_font(r2, size=10, color=CLR_BODY)
 
-    # ── 8. AUTO INSIGHT SUMMARY ─────────────────────────────────────────────
-    add_section_heading(8, "Auto Insight Summary")
-    add_status_box(insight_text, 'success')
-
+    # ── 7. AUTO INSIGHT SUMMARY ─────────────────────────────────────────────
+    add_section_heading(7, "Auto Insight Summary")
+    if insight_text:
+        add_status_box(insight_text, 'success')
     add_section_heading("", "Key Observations")
-    add_status_box(key_obs_text, 'info')
+    if key_obs_text:
+        add_status_box(key_obs_text, 'info')
 
     # ── FOOTER ──────────────────────────────────────────────────────────────
     doc.add_paragraph()
     add_divider()
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run("Intelligent Data Analytics System")
     set_font(run, size=9, italic=True, color=RGBColor(0x99,0x99,0x99))
 
@@ -924,22 +932,20 @@ def generate_word_report(data, selected_col, chart_type, clean_percent, missing_
 # ================= MAIN LOGIC ======================
 # ===================================================
 if uploaded_file is not None:
-    # ── Load data into session_state only when a new file is uploaded ────────
     file_key = uploaded_file.name + str(uploaded_file.size)
     if 'file_key' not in st.session_state or st.session_state.file_key != file_key:
         if uploaded_file.name.endswith(".csv"):
             raw = pd.read_csv(uploaded_file)
         else:
             raw = pd.read_excel(uploaded_file)
-        st.session_state.original_data = raw.copy()  # NEVER touch this
-        st.session_state.data = raw.copy()            # working copy for analysis
+        st.session_state.original_data = raw.copy()
+        st.session_state.data = raw.copy()
         st.session_state.file_key = file_key
 
-    data = st.session_state.data  # always work on the copy
+    data = st.session_state.data
 
     # ── 1. DATASET PREVIEW ──────────────────────────────────────────────────
     section_header("📄", "Dataset Preview", step=1)
-    # Always show ORIGINAL uploaded data — never modified
     original_data = st.session_state.original_data.copy()
     original_data.index = range(1, len(original_data)+1)
     st.dataframe(original_data, use_container_width=True)
@@ -962,20 +968,17 @@ if uploaded_file is not None:
 
     # ── 2. DATA CLEANING ────────────────────────────────────────────────────
     section_header("🧹", "Data Cleaning", step=2)
-
-    # Always show original data's issues so user knows what was there
-    orig = st.session_state.original_data
-    orig_missing = orig.isnull().sum().sum()
+    orig            = st.session_state.original_data
+    orig_missing    = orig.isnull().sum().sum()
     orig_duplicates = orig.duplicated().sum()
 
-    # Show original data status
     if orig_missing > 0 or orig_duplicates > 0:
         box(f"Original uploaded data has — Missing Values: <b>{orig_missing}</b>  |  Duplicate Rows: <b>{orig_duplicates}</b>", "warning")
     else:
         box("Original uploaded data is perfectly clean — no missing values, no duplicates.", "success")
 
     st.markdown('<div class="pill">🔍 Missing Values</div>', unsafe_allow_html=True)
-    missing = data.isnull().sum()
+    missing    = data.isnull().sum()
     missing_df = missing.reset_index(); missing_df.columns=["Column Name","Missing Count"]; missing_df.index=range(1,len(missing_df)+1)
     st.dataframe(missing_df, use_container_width=True)
 
@@ -999,7 +1002,6 @@ if uploaded_file is not None:
             data = st.session_state.data
             st.rerun()
 
-    # Reset button — lets user go back to original dirty data
     if orig_missing > 0 or orig_duplicates > 0:
         st.markdown("<div style='margin-top:0.8rem'></div>", unsafe_allow_html=True)
         if st.button("🔄 Reset to Original Data"):
@@ -1008,11 +1010,14 @@ if uploaded_file is not None:
 
     # ── 3. DATA HEALTH SCORE ────────────────────────────────────────────────
     section_header("💚", "Data Health Score", step=3)
-    total_cells = data.shape[0]*data.shape[1]; missing_cells=data.isnull().sum().sum(); dup_rows=data.duplicated().sum()
-    missing_percent=round((missing_cells/total_cells)*100,2); duplicate_percent=round((dup_rows/data.shape[0])*100,2)
-    clean_percent=round(max(100-missing_percent-duplicate_percent,0),2)
-    health_color="#22c55e" if clean_percent==100 else "#eab308" if clean_percent>=80 else "#ef4444"
-    health_label="Excellent 🏆" if clean_percent==100 else "Good 👍" if clean_percent>=80 else "Needs Cleaning ⚠️"
+    total_cells      = data.shape[0]*data.shape[1]
+    missing_cells    = data.isnull().sum().sum()
+    dup_rows         = data.duplicated().sum()
+    missing_percent  = round((missing_cells/total_cells)*100,2)
+    duplicate_percent= round((dup_rows/data.shape[0])*100,2)
+    clean_percent    = round(max(100-missing_percent-duplicate_percent,0),2)
+    health_color     = "#22c55e" if clean_percent==100 else "#eab308" if clean_percent>=80 else "#ef4444"
+    health_label     = "Excellent 🏆" if clean_percent==100 else "Good 👍" if clean_percent>=80 else "Needs Cleaning ⚠️"
     st.markdown(f"""
     <div class="health-bar-wrap">
         <div class="health-bar-label">
@@ -1034,14 +1039,16 @@ if uploaded_file is not None:
     st.dataframe(data.describe(), use_container_width=True)
 
     def is_id_column(col_name, series):
-        name_lower=col_name.lower(); id_kw=["id","code","no","number","num","serial","ref","roll"]
+        name_lower = col_name.lower()
+        id_kw = ["id","code","no","number","num","serial","ref","roll"]
         return any(kw in name_lower for kw in id_kw) or series.nunique()/len(series)==1.0
 
     column = st.selectbox("Select column for analysis", data.columns)
     if is_id_column(column, data[column]):
         box(f"'{column}' appears to be an ID/code column. Select a meaningful column like City, Product, Gender, etc.","warning")
+
     st.markdown('<div class="pill" style="margin-top:0.8rem">Value Counts</div>', unsafe_allow_html=True)
-    vc_df=data[column].value_counts().reset_index(); vc_df.columns=[column,"Count"]; vc_df.index=range(1,len(vc_df)+1)
+    vc_df = data[column].value_counts().reset_index(); vc_df.columns=[column,"Count"]; vc_df.index=range(1,len(vc_df)+1)
     st.dataframe(vc_df, use_container_width=True)
 
     # ── 5. VISUALIZATION ────────────────────────────────────────────────────
@@ -1067,41 +1074,43 @@ if uploaded_file is not None:
 
     st.markdown('<div class="pill" style="margin-top:0.5rem">📋 Graph Data Table</div>', unsafe_allow_html=True)
     st.caption("Exact count of each value in the selected column.")
-    chart_data_display=chart_data.copy(); chart_data_display.index=range(1,len(chart_data_display)+1)
+    chart_data_display = chart_data.copy(); chart_data_display.index=range(1,len(chart_data_display)+1)
     st.dataframe(chart_data_display, use_container_width=True)
 
     # ── 6. ADVANCED RECOMMENDATIONS ─────────────────────────────────────────
     section_header("💡", "Advanced Recommendations", step=6)
-    value_counts=data[selected_col].value_counts(); total=value_counts.sum()
-    top_percent=0; insight_text=""; key_obs_text=""; smart_suggestion_text=""
-    percent_df=pd.DataFrame(columns=["Value","Contribution (%)"])
+    value_counts = data[selected_col].value_counts()
+    total        = value_counts.sum()
+    top_percent  = 0; insight_text=""; key_obs_text=""; smart_suggestion_text=""
+    percent_df   = pd.DataFrame(columns=["Value","Contribution (%)"])
 
-    if len(value_counts)>0:
-        top_value=value_counts.idxmax(); low_value=value_counts.idxmin()
+    if len(value_counts) > 0:
+        top_value = value_counts.idxmax()
+        low_value = value_counts.idxmin()
         box(f"<b>{top_value}</b> is the highest performing value in '{selected_col}'.","success")
         if len(value_counts)>1: box(f"<b>{low_value}</b> is the lowest performing value — improvement needed.","warning")
 
         col_a, col_b = st.columns(2)
         with col_a:
             st.markdown('<div class="pill">🔝 Top 3 Values</div>', unsafe_allow_html=True)
-            top3=value_counts.head(3).reset_index(); top3.columns=[selected_col,"Count"]; top3.index=range(1,len(top3)+1)
+            top3 = value_counts.head(3).reset_index(); top3.columns=[selected_col,"Count"]; top3.index=range(1,len(top3)+1)
             st.dataframe(top3, use_container_width=True)
         with col_b:
             st.markdown('<div class="pill">🔻 Bottom 3 Values</div>', unsafe_allow_html=True)
-            bottom3=value_counts.tail(3).reset_index(); bottom3.columns=[selected_col,"Count"]; bottom3.index=range(1,len(bottom3)+1)
+            bottom3 = value_counts.tail(3).reset_index(); bottom3.columns=[selected_col,"Count"]; bottom3.index=range(1,len(bottom3)+1)
             st.dataframe(bottom3, use_container_width=True)
 
         st.markdown('<div class="pill" style="margin-top:1rem">📊 Percentage Contribution</div>', unsafe_allow_html=True)
-        percentage=(value_counts/total*100).round(2); percent_df=percentage.reset_index()
-        percent_df.columns=["Value","Contribution (%)"]; percent_df.index=range(1,len(percent_df)+1)
+        percentage = (value_counts/total*100).round(2)
+        percent_df = percentage.reset_index(); percent_df.columns=["Value","Contribution (%)"]; percent_df.index=range(1,len(percent_df)+1)
         st.dataframe(percent_df, use_container_width=True)
 
-        max_percent=percentage.max()
+        max_percent = percentage.max()
         if max_percent>60: box(f"<b>{top_value}</b> dominates with {max_percent}% — reduce dependency for better balance.","error")
         elif max_percent>40: box(f"<b>{top_value}</b> has strong influence ({max_percent}%) — maintain but diversify.","warning")
         else: box("Data distribution is fairly balanced across all categories.","success")
 
-        col_lower=selected_col.lower()
+        col_lower = selected_col.lower()
         if "sales" in col_lower or "price" in col_lower or "revenue" in col_lower: smart_suggestion_text="Focus on high-value items to maximize revenue."
         elif "age" in col_lower: smart_suggestion_text="Target the most frequent age group for better reach."
         elif "quantity" in col_lower or "qty" in col_lower: smart_suggestion_text="Optimize inventory based on demand patterns."
@@ -1117,26 +1126,37 @@ if uploaded_file is not None:
 
     # ── 7. AUTO INSIGHT SUMMARY ──────────────────────────────────────────────
     section_header("🧠", "Auto Insight Summary", step=7)
-    if len(value_counts)>0:
-        top_value=value_counts.idxmax(); top_count=value_counts.max(); total_records=value_counts.sum()
-        top_percent=round((top_count/total_records)*100,2)
-        insight_text=f"'{top_value}' contributes {top_percent}% of the total data and is the top-performing category."
-        if len(value_counts)>1:
-            second_value=value_counts.index[1]; second_percent=round((value_counts.iloc[1]/total_records)*100,2)
-            insight_text+=f" It is followed by '{second_value}' with {second_percent}% contribution."
-        insight_text+=(" The dataset is highly concentrated in one category." if top_percent>60 else " The dataset shows moderate dominance by one category." if top_percent>40 else " The dataset is fairly balanced across categories.")
+    if len(value_counts) > 0:
+        top_value    = value_counts.idxmax()
+        top_count    = value_counts.max()
+        total_records= value_counts.sum()
+        top_percent  = round((top_count/total_records)*100,2)
+        insight_text = f"'{top_value}' contributes {top_percent}% of the total data and is the top-performing category."
+        if len(value_counts) > 1:
+            second_value   = value_counts.index[1]
+            second_percent = round((value_counts.iloc[1]/total_records)*100,2)
+            insight_text  += f" It is followed by '{second_value}' with {second_percent}% contribution."
+        insight_text += (" The dataset is highly concentrated in one category." if top_percent>60
+                         else " The dataset shows moderate dominance by one category." if top_percent>40
+                         else " The dataset is fairly balanced across categories.")
         st.markdown(f'<div class="insight-card"><div class="insight-card-title">📊 Insight</div><div class="insight-card-body">👉 {insight_text}</div></div>', unsafe_allow_html=True)
 
-        col_lower=selected_col.lower()
-        if "sales" in col_lower or "price" in col_lower: key_obs_text="Revenue is driven by high-value categories. Focus on scaling them."
-        elif "age" in col_lower: key_obs_text="Most customers belong to a specific age group. Target marketing accordingly."
-        elif "quantity" in col_lower: key_obs_text="Demand pattern suggests optimizing stock levels."
-        elif "city" in col_lower or "region" in col_lower: key_obs_text="Certain locations show higher activity. Prioritize resources there."
-        elif "product" in col_lower or "category" in col_lower: key_obs_text="Top product categories are clear. Invest more in them."
-        else: key_obs_text="Focus on improving lower-performing categories for better overall balance."
+        col_lower = selected_col.lower()
+        if "sales" in col_lower or "price" in col_lower:
+            key_obs_text="Revenue is driven by high-value categories. Focus on scaling them."
+        elif "age" in col_lower:
+            key_obs_text="Most customers belong to a specific age group. Target marketing accordingly."
+        elif "quantity" in col_lower:
+            key_obs_text="Demand pattern suggests optimizing stock levels."
+        elif "city" in col_lower or "region" in col_lower:
+            key_obs_text="Certain locations show higher activity. Prioritize resources there."
+        elif "product" in col_lower or "category" in col_lower:
+            key_obs_text="Top product categories are clear. Invest more in them."
+        else:
+            key_obs_text="Focus on improving lower-performing categories for better overall balance."
         st.markdown(f'<div class="insight-card" style="margin-top:0.8rem;border-color:rgba(99,110,250,0.15)"><div class="insight-card-title">📌 Key Observations</div><div class="insight-card-body">💡 {key_obs_text}</div></div>', unsafe_allow_html=True)
 
-    # ── 8. DOWNLOAD ───────────────────────────────────────────────────────────
+    # ── 8. DOWNLOAD REPORT ────────────────────────────────────────────────────
     section_header("📥", "Download Report", step=8)
     st.markdown('<p style="color:#6b6b8a;font-size:0.9rem;margin-bottom:1.5rem">Preview your full analysis and download as Word or PDF.</p>', unsafe_allow_html=True)
 
@@ -1150,20 +1170,33 @@ if uploaded_file is not None:
             <div class="preview-banner-date">Generated: {datetime.now().strftime('%d %B %Y, %I:%M %p')}</div>
         </div>""", unsafe_allow_html=True)
 
+        # ── Preview: Step 1 ──────────────────────────────────────────────
         section_header("📄","Dataset Preview")
-        prev=data.copy(); prev.index=range(1,len(prev)+1); st.dataframe(prev, use_container_width=True)
+        prev = data.copy(); prev.index=range(1,len(prev)+1)
+        st.dataframe(prev, use_container_width=True)
         box(f"Dataset Loaded: {data.shape[0]} rows, {data.shape[1]} columns","success")
+        box("Your original file is safe and unchanged. All cleaning and analysis is done on a separate working copy.","info")
 
+        # ── Preview: Step 2 ──────────────────────────────────────────────
         section_header("🧹","Data Cleaning")
+        if orig_missing > 0 or orig_duplicates > 0:
+            box(f"Original uploaded data has — Missing Values: <b>{orig_missing}</b>  |  Duplicate Rows: <b>{orig_duplicates}</b>","warning")
+        else:
+            box("Original uploaded data is perfectly clean — no missing values, no duplicates.","success")
+
         st.markdown('<div class="pill">🔍 Missing Values</div>', unsafe_allow_html=True)
         st.dataframe(missing_df, use_container_width=True)
-        if data.isnull().sum().sum()==0: box("No missing values found ✅","success")
-        else: box(f"Total missing values: {data.isnull().sum().sum()}","warning")
-        st.markdown('<div class="pill" style="margin-top:0.8rem">🔁 Duplicate Rows</div>', unsafe_allow_html=True)
-        dc=data.duplicated().sum()
-        if dc==0: box("No duplicate rows found ✅","success")
-        else: box(f"{dc} duplicate row(s) found.","warning")
+        if data.isnull().sum().sum()==0:
+            box("No missing values found — dataset is perfectly clean.","success")
+        else:
+            box(f"Total missing values found: {data.isnull().sum().sum()}","warning")
 
+        st.markdown('<div class="pill" style="margin-top:0.8rem">🔁 Duplicate Rows</div>', unsafe_allow_html=True)
+        dc = data.duplicated().sum()
+        if dc==0: box("No duplicate rows — all records are unique.","success")
+        else:     box(f"{dc} duplicate row(s) found.","warning")
+
+        # ── Preview: Step 3 ──────────────────────────────────────────────
         section_header("💚","Data Health Score")
         st.markdown(f"""
         <div class="health-bar-wrap">
@@ -1180,54 +1213,77 @@ if uploaded_file is not None:
             </div>
         </div>""", unsafe_allow_html=True)
 
+        # ── Preview: Step 4 ──────────────────────────────────────────────
         section_header("📊","Data Analysis")
+        st.markdown('<div class="pill">Statistical Summary</div>', unsafe_allow_html=True)
         st.dataframe(data.describe().round(2), use_container_width=True)
-        vc_df2=data[column].value_counts().reset_index(); vc_df2.columns=[column,"Count"]; vc_df2.index=range(1,len(vc_df2)+1)
+
+        st.write(f"**Select column for analysis:** {column}")
+
+        st.markdown('<div class="pill" style="margin-top:0.8rem">Value Counts</div>', unsafe_allow_html=True)
+        vc_df2 = data[column].value_counts().reset_index(); vc_df2.columns=[column,"Count"]; vc_df2.index=range(1,len(vc_df2)+1)
         st.dataframe(vc_df2, use_container_width=True)
 
+        # ── Preview: Step 5 ──────────────────────────────────────────────
         section_header("📈","Visualization")
         box("Graph shows actual counts of each value — exact data, no ranges.","info")
-        chart_data_prev=data[selected_col].value_counts().reset_index(); chart_data_prev.columns=[selected_col,"Count"]
+        chart_data_prev = data[selected_col].value_counts().reset_index(); chart_data_prev.columns=[selected_col,"Count"]
         render_chart(chart_data_prev, data, selected_col, chart_type, key_suffix="_preview")
-
-        st.markdown('<div class="pill">📋 Graph Data Table</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pill" style="margin-top:0.5rem">📋 Graph Data Table</div>', unsafe_allow_html=True)
+        st.caption("Exact count of each value in the selected column.")
         st.dataframe(chart_data_display, use_container_width=True)
 
+        # ── Preview: Step 6 ──────────────────────────────────────────────
         section_header("💡","Advanced Recommendations")
-        if len(value_counts)>0:
+        if len(value_counts) > 0:
             box(f"<b>{value_counts.idxmax()}</b> is the highest performing value in '{selected_col}'.","success")
-            if len(value_counts)>1: box(f"<b>{value_counts.idxmin()}</b> is the lowest performing value.","warning")
-            ca2,cb2=st.columns(2)
+            if len(value_counts)>1: box(f"<b>{value_counts.idxmin()}</b> is the lowest performing value — improvement needed.","warning")
+            ca2, cb2 = st.columns(2)
             with ca2:
                 st.markdown('<div class="pill">🔝 Top 3 Values</div>', unsafe_allow_html=True)
-                t3p=value_counts.head(3).reset_index(); t3p.columns=[selected_col,"Count"]; t3p.index=range(1,len(t3p)+1)
+                t3p = value_counts.head(3).reset_index(); t3p.columns=[selected_col,"Count"]; t3p.index=range(1,len(t3p)+1)
                 st.dataframe(t3p, use_container_width=True)
             with cb2:
                 st.markdown('<div class="pill">🔻 Bottom 3 Values</div>', unsafe_allow_html=True)
-                b3p=value_counts.tail(3).reset_index(); b3p.columns=[selected_col,"Count"]; b3p.index=range(1,len(b3p)+1)
+                b3p = value_counts.tail(3).reset_index(); b3p.columns=[selected_col,"Count"]; b3p.index=range(1,len(b3p)+1)
                 st.dataframe(b3p, use_container_width=True)
             st.markdown('<div class="pill" style="margin-top:1rem">📊 Percentage Contribution</div>', unsafe_allow_html=True)
             st.dataframe(percent_df, use_container_width=True)
-            mxp=(value_counts/value_counts.sum()*100).max()
-            if mxp>60: box(f"<b>{value_counts.idxmax()}</b> dominates with {round(mxp,2)}%.","error")
-            elif mxp>40: box(f"<b>{value_counts.idxmax()}</b> has strong influence ({round(mxp,2)}%).","warning")
-            else: box("Distribution is fairly balanced.","success")
+            mxp = (value_counts/value_counts.sum()*100).max()
+            if mxp>60:    box(f"<b>{value_counts.idxmax()}</b> dominates with {round(mxp,2)}% — reduce dependency for better balance.","error")
+            elif mxp>40:  box(f"<b>{value_counts.idxmax()}</b> has strong influence ({round(mxp,2)}%) — maintain but diversify.","warning")
+            else:         box("Distribution is fairly balanced across all categories.","success")
             st.markdown(f'<div class="insight-card"><div class="insight-card-title">🧠 Smart Suggestion</div><div class="insight-card-body">💡 {smart_suggestion_text}</div></div>', unsafe_allow_html=True)
 
+        # ── Preview: Step 7 ──────────────────────────────────────────────
         section_header("🧠","Auto Insight Summary")
         if insight_text: st.markdown(f'<div class="insight-card"><div class="insight-card-title">📊 Insight</div><div class="insight-card-body">👉 {insight_text}</div></div>', unsafe_allow_html=True)
         if key_obs_text: st.markdown(f'<div class="insight-card" style="margin-top:0.8rem"><div class="insight-card-title">📌 Key Observations</div><div class="insight-card-body">💡 {key_obs_text}</div></div>', unsafe_allow_html=True)
 
+        # ── Download Buttons ─────────────────────────────────────────────
         section_header("⬇️","Download Your Report")
-        word_bytes=generate_word_report(data,selected_col,chart_type,clean_percent,missing_percent,duplicate_percent,value_counts,percent_df,top_percent,insight_text,key_obs_text,smart_suggestion_text,chart_img_bytes,missing_df)
-        pdf_bytes=generate_pdf_report(data,selected_col,chart_type,clean_percent,missing_percent,duplicate_percent,value_counts,percent_df,top_percent,insight_text,key_obs_text,smart_suggestion_text,chart_img_bytes,missing_df)
-        dc1,dc2=st.columns(2)
+        word_bytes = generate_word_report(data, selected_col, chart_type, clean_percent, missing_percent,
+                                          duplicate_percent, value_counts, percent_df, top_percent,
+                                          insight_text, key_obs_text, smart_suggestion_text,
+                                          chart_img_bytes, missing_df, column)
+        pdf_bytes  = generate_pdf_report(data, selected_col, chart_type, clean_percent, missing_percent,
+                                         duplicate_percent, value_counts, percent_df, top_percent,
+                                         insight_text, key_obs_text, smart_suggestion_text,
+                                         chart_img_bytes, missing_df, column)
+        dc1, dc2 = st.columns(2)
         with dc1:
-            if word_bytes: st.download_button(label="📝 Download Word Report (.docx)",data=word_bytes,file_name="Analysis_Report.docx",mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-            else: box("Word generation failed. Run: pip install python-docx","error")
+            if word_bytes:
+                st.download_button(label="📝 Download Word Report (.docx)", data=word_bytes,
+                                   file_name="Analysis_Report.docx",
+                                   mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            else:
+                box("Word generation failed. Run: pip install python-docx","error")
         with dc2:
-            if pdf_bytes: st.download_button(label="📄 Download PDF Report (.pdf)",data=pdf_bytes,file_name="Analysis_Report.pdf",mime="application/pdf")
-            else: box("PDF generation failed. Run: pip install reportlab","error")
+            if pdf_bytes:
+                st.download_button(label="📄 Download PDF Report (.pdf)", data=pdf_bytes,
+                                   file_name="Analysis_Report.pdf", mime="application/pdf")
+            else:
+                box("PDF generation failed. Run: pip install reportlab","error")
 
 # ── FOOTER ──────────────────────────────────────────────────────────────────
 st.markdown("""
