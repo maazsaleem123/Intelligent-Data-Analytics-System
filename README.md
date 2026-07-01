@@ -245,8 +245,7 @@ Every downloaded Word or PDF report contains:
 ## ⭐ Support
 
 If you find this project useful, please give it a **star ⭐** on GitHub — it helps others discover it!
-
-[![GitHub stars](https://img.shields.io/github/stars/maazsaleem123/Intelligent-Data-Analytics-System.svg?style=social&label=Star)](https://github.com/maazsaleem123/Intelligent-Data-Analytics-System/stargazers)
+[![Star this repo](https://img.shields.io/badge/⭐-Star%20this%20repo-yellow?style=for-the-badge)](https://github.com/maazsaleem123/Intelligent-Data-Analytics-System/stargazers)
 
 ---
 
